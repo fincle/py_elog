@@ -3,7 +3,7 @@ import urllib.parse
 import os
 import builtins
 import re
-from elog.logbook_exceptions import *
+from logbook_exceptions import *
 
 # disable warnings about ssl verification
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -294,6 +294,37 @@ class Logbook(object):
         # html page of this whole message.
         if response.status_code == 200:
             raise LogbookServerProblem('Cannot process delete command (only logbooks in English supported).')
+
+    def check_message_exists(self, msg_id):
+        """Try to load page for specific message. If there is a htm tag like <td class="errormsg"> then there is no
+        such message.
+        
+        Similar to _check_if_message_on_server but returns true/false rather than excption and is accesable from import 
+
+        :param msg_id: ID of message to be checked
+        :return:
+        """
+
+        request_headers = dict()
+        if self._user or self._password:
+            request_headers['Cookie'] = self._make_user_and_pswd_cookie()
+        try:
+            response = requests.get(self._url + str(msg_id), headers=request_headers, allow_redirects=False,
+                                    verify=False)
+
+            # If there is no message code 200 will be returned (OK) and _validate_response will not recognise it
+            # but there will be some error in the html code.
+            resp_message, resp_headers, resp_msg_id = self._validate_response(response)
+            # If there is no message, code 200 will be returned (OK) but there will be some error indication in
+            # the html code.
+            if re.findall('<td.*?class="errormsg".*?>.*?</td>', resp_message.decode('utf-8'), flags=re.DOTALL):
+                return False
+            else:
+                return True
+
+        except requests.RequestException as e:
+            raise LogbookServerProblem('No response from the logbook server.\nDetails: ' + '{0}'.format(e))
+
 
     def _check_if_message_on_server(self, msg_id):
         """Try to load page for specific message. If there is a htm tag like <td class="errormsg"> then there is no
