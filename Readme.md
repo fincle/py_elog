@@ -62,6 +62,14 @@ __Delete Message (and all its replies)__
  logbook.delete(23)
  ```
 
+__ Check If Post Exists Yet __
+
+```python
+ # Check if message ID=23 exists. Returns true if it does, false if it doesn't and raises exception if logbook is unreachable.
+ logbook.check_message_exists(23)
+ ```
+
+
 __Note:__ Due to the way elog implements delete this function is only supported on english logbooks.
 
 # API Documentation
